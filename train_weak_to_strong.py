@@ -8,8 +8,7 @@ import torch
 
 import weak_to_strong.logger as logger
 from weak_to_strong.common import get_tokenizer
-from weak_to_strong.datasets import (VALID_DATASETS, load_dataset,
-                                     tokenize_dataset)
+from weak_to_strong.datasets import (VALID_DATASETS, load_dataset, tokenize_dataset)
 from weak_to_strong.loss import logconf_loss_fn, product_loss_fn, xent_loss
 from weak_to_strong.train import ModelConfig, train_and_save_model
 
@@ -17,9 +16,11 @@ from weak_to_strong.train import ModelConfig, train_and_save_model
 model_conf_params = {}
 
 #create configs
-model_conf_params["gpt2"] = {"default_lr":5e-5,"eval_batch_size":32}
-model_conf_params["gpt2-medium"] = {"default_lr":5e-5,"eval_batch_size":32}
-model_conf_params["gpt2-large"] = {"defaultlr":5e-5,"eval_batch_size":32}
+# model_conf_params["EleutherAI/pythia-14m"] = {"default_lr":5e-5,"eval_batch_size":32}
+model_conf_params["EleutherAI/pythia-70m"] = {"default_lr":5e-5,"eval_batch_size":32}
+model_conf_params["EleutherAI/pythia-160m"] = {"defaultlr":5e-5,"eval_batch_size":32}
+model_conf_params["EleutherAI/pythia-410m"] = {"defaultlr":5e-5,"eval_batch_size":32}
+
 
 ## read this from a yaml later
 MODELS_DICT = {}
@@ -33,11 +34,7 @@ for key, value in model_conf_params.items():
     MODELS_DICT[key] = model_config_instance = ModelConfig(
         name=key,
         default_lr=default_lr,
-        eval_batch_size=eval_batch_size,
-        custom_kwargs={
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
-        },
+        eval_batch_size=eval_batch_size
     )
 
 
@@ -54,13 +51,13 @@ VALID_LOSSES: List[str] = list(loss_dict.keys())
 def main(
     batch_size: int = 32,
     max_ctx: int = 1024,
-    ds_name: str = "sciq",
+    ds_name: str = "truthful_qa",
     transfer_loss: Union[str, Sequence[str]] = "xent,logconf",
     n_docs: int = 10000,
     n_test_docs: int = 200,
-    weak_model_size: str = "gpt2",
+    weak_model_size: str = "EleutherAI/pythia-70m",
     weak_lr: Optional[float] = None,
-    strong_model_size: str = "gpt2-large",
+    strong_model_size: str = "EleutherAI/pythia-410m",
     strong_lr: Optional[float] = None,
     # Defaults to strong_lr
     transfer_lr: Optional[float] = None,
@@ -112,7 +109,6 @@ def main(
         transfer_lr = strong_lr
     if transfer_epochs is None:
         transfer_epochs = gt_epochs
-
     if weak_optim is None:
         weak_optim = weak_model_config.default_optimizer
     if strong_optim is None:
@@ -267,17 +263,8 @@ def main(
         res_dict[f"transfer_acc_{tloss}"] = transfer_acc
         print(f"transfer acc ({tloss}):", transfer_acc)
 
-    with open(
-        os.path.join(
-            results_folder,
-            f"{weak_model_size.replace('/', '_')}_{strong_model_size.replace('/', '_')}.results_summary.json",
-        ),
-        "w",
-    ) as f:
-        json.dump(
-            res_dict,
-            f,
-        )
+    with open(os.path.join(results_folder,f"{weak_model_size.replace('/', '_')}_{strong_model_size.replace('/', '_')}.results_summary.json",),"w",) as f:
+        json.dump(res_dict,f,)
 
 
 # python train_weak_to_strong.py --batch_size 32 --max_ctx 512 --ds_name "sciq" --transfer_loss "logconf" --n_docs 1000 --n_test_docs 100 --weak_model_size "gpt2-medium" --strong_model_size "gpt2-large" --seed 42
