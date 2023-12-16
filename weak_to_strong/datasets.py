@@ -91,7 +91,8 @@ def format_amazon_polarity(ex, rng):
 
 register_dataset(
     "amazon_polarity",
-    DatasetConfig(loader=hf_loader("amazon_polarity"), formatter=format_amazon_polarity),
+    DatasetConfig(loader=hf_loader("amazon_polarity"), 
+    formatter=format_amazon_polarity),
 )
 
 
@@ -107,7 +108,8 @@ def format_sciq(ex, rng):
 
 register_dataset(
     "sciq",
-    DatasetConfig(loader=hf_loader("sciq"), formatter=format_sciq),
+    DatasetConfig(loader=hf_loader("sciq"), 
+    formatter=format_sciq),
 )
 
 
@@ -119,7 +121,8 @@ def format_anthropic_hh(ex, rng):
 
 register_dataset(
     "anthropic_hh",
-    DatasetConfig(loader=hf_loader("Anthropic/hh-rlhf"), formatter=format_anthropic_hh),
+    DatasetConfig(loader=hf_loader("Anthropic/hh-rlhf"), 
+    formatter=format_anthropic_hh),
 )
 
 
@@ -157,7 +160,32 @@ def format_boolq(ex, rng):
 register_dataset(
     "boolq",
     DatasetConfig(
-        loader=hf_loader("boolq", split_names=dict(test="validation")), formatter=format_boolq
+        loader=hf_loader("boolq", split_names=dict(test="validation")), 
+        formatter=format_boolq
+    ),
+)
+
+
+def format_truthful_qa(ex, rng):
+    true_answer = ex["choices"][int(ex["label"])]
+    if "None of the above choices ." in true_answer:
+        hard_label = 0
+    else:
+        assert "None of the above choices" not in true_answer, true_answer
+        hard_label = int(rng.random() < 0.5)
+    if hard_label:
+        answer = true_answer
+    else:
+        candidate_answers = [choice for i in ex["choices"]]
+        answer = rng.choice([x for x in candidate_answers if x != true_answer])
+    txt = f"Context: {ex['context']}\nQuestion: {ex['question']}\nAnswer: {answer}"
+    return dict(txt=txt, hard_label=hard_label)
+
+
+register_dataset(
+    "truthful_qa",
+    DatasetConfig(
+        loader=hf_loader("EleutherAI/truthful_qa_mc", split_names=dict(test="validation")), formatter=format_truthful_qa
     ),
 )
 

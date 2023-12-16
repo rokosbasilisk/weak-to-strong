@@ -17,9 +17,9 @@ model_conf_params = {}
 
 #create configs
 # model_conf_params["EleutherAI/pythia-14m"] = {"default_lr":5e-5,"eval_batch_size":32}
-model_conf_params["EleutherAI/pythia-70m"] = {"default_lr":5e-5,"eval_batch_size":32}
-model_conf_params["EleutherAI/pythia-160m"] = {"defaultlr":5e-5,"eval_batch_size":32}
-model_conf_params["EleutherAI/pythia-410m"] = {"defaultlr":5e-5,"eval_batch_size":32}
+model_conf_params["EleutherAI/pythia-70m"]  = {"default_lr":5e-5,"eval_batch_size":32}
+model_conf_params["EleutherAI/pythia-160m"] = {"default_lr":5e-5,"eval_batch_size":32}
+model_conf_params["EleutherAI/pythia-410m"] = {"default_lr":5e-5,"eval_batch_size":32}
 
 
 ## read this from a yaml later
