@@ -14,103 +14,32 @@ from weak_to_strong.loss import logconf_loss_fn, product_loss_fn, xent_loss
 from weak_to_strong.train import ModelConfig, train_and_save_model
 
 # NOTE learning rates are not particularly tuned, work somewhat reasonably at train batch size 32
-MODEL_CONFIGS = [
-    ModelConfig(
-        name="gpt2",
-        default_lr=5e-5,
-        eval_batch_size=32,
+model_conf_params = {}
+
+#create configs
+model_conf_params["gpt2"] = {"default_lr":5e-5,"eval_batch_size":32}
+model_conf_params["gpt2-medium"] = {"default_lr":5e-5,"eval_batch_size":32}
+model_conf_params["gpt2-large"] = {"defaultlr":5e-5,"eval_batch_size":32}
+
+## read this from a yaml later
+MODELS_DICT = {}
+# Iterate over the dictionary and create ModelConfig instances
+for key, value in model_conf_params.items():
+    # Default values if the keys are not present in the dictionary
+    default_lr = value.get("default_lr", 5e-5)
+    eval_batch_size = value.get("eval_batch_size", 32)
+
+    # Create ModelConfig instance
+    MODELS_DICT[key] = model_config_instance = ModelConfig(
+        name=key,
+        default_lr=default_lr,
+        eval_batch_size=eval_batch_size,
         custom_kwargs={
             "bf16": torch.cuda.is_bf16_supported(),
             "fp32": not torch.cuda.is_bf16_supported(),
         },
-    ),
-    ModelConfig(
-        name="gpt2-medium",
-        default_lr=5e-5,
-        eval_batch_size=32,
-        custom_kwargs={
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
-        },
-    ),
-    ModelConfig(
-        name="gpt2-large",
-        default_lr=1e-5,
-        eval_batch_size=32,
-        custom_kwargs={
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
-        },
-    ),
-    ModelConfig(
-        name="gpt2-xl",
-        default_lr=1e-5,
-        eval_batch_size=2,
-        gradient_checkpointing=True,
-        model_parallel=True,
-        custom_kwargs={
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
-        },
-    ),
-    ModelConfig(
-        name="Qwen/Qwen-1_8B",
-        default_lr=1e-5,
-        eval_batch_size=2,
-        gradient_checkpointing=True,
-        model_parallel=True,
-        custom_kwargs={
-            "trust_remote_code": True,
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
-        },
-    ),
-    ModelConfig(
-        name="Qwen/Qwen-7B",
-        default_lr=1e-5,
-        eval_batch_size=2,
-        gradient_checkpointing=True,
-        model_parallel=True,
-        # note: you will probably not be able to run this without many gpus
-        custom_kwargs={
-            "trust_remote_code": True,
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
-        },
-    ),
-    ModelConfig(
-        name="Qwen/Qwen-14B",
-        default_lr=1e-5,
-        eval_batch_size=2,
-        gradient_checkpointing=True,
-        model_parallel=True,
-        # note: you will probably not be able to run this without bf16 support and many gpus
-        custom_kwargs={
-            "trust_remote_code": True,
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
-        },
-    ),
-    ModelConfig(
-        name="Qwen/Qwen-72B",
-        default_lr=1e-5,
-        eval_batch_size=1,
-        gradient_checkpointing=True,
-        model_parallel=True,
-        # note: you will probably not be able to run this without bf16 support and many gpus
-        custom_kwargs={
-            "trust_remote_code": True,
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
-        },
-        # This model is really big, save space by using adafactor.
-        # Note that even then it will take up ~60GB per GPU on an 8-GPU machine.
-        default_optimizer="adafactor",
-    ),
-]
-MODELS_DICT: Dict[str, ModelConfig] = {
-    model_config.name: model_config for model_config in MODEL_CONFIGS
-}
+    )
+
 
 
 loss_dict = {
@@ -131,7 +60,7 @@ def main(
     n_test_docs: int = 200,
     weak_model_size: str = "gpt2",
     weak_lr: Optional[float] = None,
-    strong_model_size: str = "gpt2-xl",
+    strong_model_size: str = "gpt2-large",
     strong_lr: Optional[float] = None,
     # Defaults to strong_lr
     transfer_lr: Optional[float] = None,
