@@ -153,7 +153,7 @@ def train_w2s(
         save_path = os.path.join(results_folder, subpath)
         linprobe_str = "_linprobe" if linear_probe else ""
         logger.configure(
-            name="{log_prefix}{label}_{base_model_name}_{ds_name}_{loss_type}_{optimizer_name}_{lr}_{lr_schedule}{linprobe_str}_{datetime_now}",
+            name="{log_prefix}{label}_{base_model_name}_{checkpoint}_{ds_name}_{loss_type}_{optimizer_name}_{lr}_{lr_schedule}{linprobe_str}_{datetime_now}",
             label=label,
             ds_name=ds_name,
             truncation_max_len=n_docs or "none",
@@ -209,7 +209,7 @@ def train_w2s(
         test_ds,
         loss_type="xent",
         label="weak",
-        subpath=os.path.join("weak_model_gt", weak_model_size.replace("/", "_")),
+        subpath=os.path.join("weak_model_gt", weak_model_size.replace("/", "_"),"_",checkpoint),
         lr=weak_lr,
         eval_batch_size=weak_eval_batch_size,
         inference_ds=train2_ds,
@@ -227,7 +227,7 @@ def train_w2s(
         test_ds,
         loss_type="xent",
         label="strong",
-        subpath=os.path.join("strong_model_gt", strong_model_size.replace("/", "_")),
+        subpath=os.path.join("strong_model_gt", strong_model_size.replace("/", "_"),"_",checkpoint),
         lr=strong_lr,
         eval_batch_size=strong_eval_batch_size,
         epochs=gt_epochs,
