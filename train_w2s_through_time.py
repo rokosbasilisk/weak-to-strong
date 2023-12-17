@@ -51,7 +51,7 @@ loss_dict = {
 VALID_LOSSES: List[str] = list(loss_dict.keys())
 
 
-def train_w2s(
+def main(
     batch_size: int = 32,
     max_ctx: int = 1024,
     ds_name: str = "boolq",
@@ -59,10 +59,8 @@ def train_w2s(
     n_docs: int = 10000,
     n_test_docs: int = 200,
     weak_model_size: str = "EleutherAI/pythia-70m",
-    weak_model_ckpt: str = "step1000",
     weak_lr: Optional[float] = None,
     strong_model_size: str = "EleutherAI/pythia-410m",
-    strong_model_ckpt: str = "step2000",
     strong_lr: Optional[float] = None,
     # Defaults to strong_lr
     transfer_lr: Optional[float] = None,
@@ -136,7 +134,6 @@ def train_w2s(
 
     def train_model(
         model_config: ModelConfig,
-        checkpoint: str,
         train_ds: torch.utils.data.Dataset,
         test_ds: torch.utils.data.Dataset,
         *,
@@ -181,7 +178,6 @@ def train_w2s(
         print(f"minibatch_size_per_device is :{minibatch_size_per_device}")
         return train_and_save_model(
             model_config,
-            checkpoint,
             train_ds,
             test_ds,
             inference_ds=inference_ds,
@@ -204,7 +200,6 @@ def train_w2s(
     print(f"Training weak model, size {weak_model_size}")
     weak_test_results, weak_ds = train_model(
         weak_model_config,
-        weak_model_ckpt,
         train1_ds,
         test_ds,
         loss_type="xent",
@@ -222,7 +217,6 @@ def train_w2s(
     print(f"Training strong model, size {strong_model_size}")
     strong_test_results, _ = train_model(
         strong_model_config,
-        strong_model_ckpt,
         train2_ds,
         test_ds,
         loss_type="xent",
@@ -243,7 +237,6 @@ def train_w2s(
         )
         transfer_test_results, _ = train_model(
             strong_model_config,
-            strong_model_ckpt,
             weak_ds,
             test_ds,
             loss_type=tloss,
@@ -278,4 +271,4 @@ def train_w2s(
         json.dump(res_dict,f,)
 
 if __name__ == "__main__":
-    fire.Fire(train_w2s)
+    fire.Fire(main)

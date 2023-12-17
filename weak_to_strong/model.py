@@ -14,11 +14,18 @@ class TransformerWithHead(PreTrainedModel):
     This class initializes the linear head to zeros
     """
 
-    def __init__(self, name, linear_probe=False, **kwargs):
+    def __init__(self, name, checkpoint=None, linear_probe=False, **kwargs):
         config = AutoConfig.from_pretrained(name, **kwargs)
         super().__init__(config)
         self.num_labels = config.num_labels
-        lm = AutoModelForCausalLM.from_pretrained(name, **kwargs)
+        self.checkpoint = checkpoint
+        print(f"model: {name}-{checkpoint}")
+
+        if checkpoint==None:
+            lm = AutoModelForCausalLM.from_pretrained(name, **kwargs)
+        else:
+            lm = AutoModelForCausalLM.from_pretrained(name, revision=checkpoint, **kwargs)
+
         self.lm = lm
 
         if (name.startswith("EleutherAI")): # for pythia models
@@ -37,8 +44,8 @@ class TransformerWithHead(PreTrainedModel):
         self.linear_probe = linear_probe
 
     @classmethod
-    def from_pretrained(cls, name, **kwargs):
-        return cls(name, **kwargs)
+    def from_pretrained(cls, name, checkpoint, **kwargs):
+        return cls(name, checkpoint,  **kwargs)
 
     def gradient_checkpointing_enable(self):
         model = self.transformer

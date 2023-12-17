@@ -166,6 +166,7 @@ def train_model(
 
 def train_and_save_model(
     model_config: ModelConfig,
+    checkpoint,
     train_ds: datasets.Dataset,
     test_ds: datasets.Dataset,
     inference_ds: Optional[datasets.Dataset] = None,
@@ -217,6 +218,7 @@ def train_and_save_model(
         assert torch.cuda.device_count() > 1, f"you might want more gpus for {model_config.name}"
         model = TransformerWithHead.from_pretrained(
             model_config.name,
+            checkpoint,
             num_labels=2,
             device_map="auto",
             linear_probe=linear_probe,
@@ -226,9 +228,12 @@ def train_and_save_model(
         # slight misnomer, more like minibatch_size_per_dp_replica
         minibatch_size = minibatch_size_per_device
     else:
-        print("model_parallel is absent")
         model = TransformerWithHead.from_pretrained(
-            model_config.name, num_labels=2, linear_probe=linear_probe, **custom_kwargs
+            model_config.name,
+            checkpoint,
+            num_labels=2, 
+            linear_probe=linear_probe, 
+            **custom_kwargs
         ).to("cuda")
         already_trained = maybe_load_model(model)
         # data parallel:  currently not supported with model parallel
