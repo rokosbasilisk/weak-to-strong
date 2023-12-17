@@ -7,7 +7,7 @@ import numpy as np
 import torch
 
 import weak_to_strong.logger as logger
-from weak_to_strong.common import get_tokenizer
+from weak_to_strong.utils import get_tokenizer
 from weak_to_strong.datasets import (VALID_DATASETS, load_dataset, tokenize_dataset)
 from weak_to_strong.loss import logconf_loss_fn, product_loss_fn, xent_loss
 from weak_to_strong.train import ModelConfig, train_and_save_model
@@ -71,7 +71,7 @@ def main(
     transfer_epochs: Optional[int] = None,
     force_retrain: bool = False,
     seed: int = 0,
-    minibatch_size_per_device: Optional[int] = None,
+    minibatch_size_per_device: Optional[int] = 8,
     train_with_dropout: bool = False,
     results_folder: str = "/tmp/results",
     linear_probe: bool = False,
@@ -173,6 +173,7 @@ def main(
             inference_ds = tokenize_dataset(inference_ds, tokenizer, max_ctx)
 
         loss_fn = loss_dict[loss_type]
+        print(f"minibatch_size_per_device is :{minibatch_size_per_device}")
         return train_and_save_model(
             model_config,
             train_ds,
@@ -267,7 +268,5 @@ def main(
     with open(os.path.join(results_folder,f"{weak_model_size.replace('/', '_')}_{strong_model_size.replace('/', '_')}.results_summary.json",),"w",) as f:
         json.dump(res_dict,f,)
 
-
-# python train_weak_to_strong.py --batch_size 32 --max_ctx 512 --ds_name "sciq" --transfer_loss "logconf" --n_docs 1000 --n_test_docs 100 --weak_model_size "gpt2-medium" --strong_model_size "gpt2-large" --seed 42
 if __name__ == "__main__":
     fire.Fire(main)

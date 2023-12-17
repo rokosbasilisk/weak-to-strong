@@ -165,31 +165,6 @@ register_dataset(
     ),
 )
 
-
-def format_truthful_qa(ex, rng):
-    true_answer = ex["choices"][int(ex["label"])]
-    if "None of the above choices ." in true_answer:
-        hard_label = 0
-    else:
-        assert "None of the above choices" not in true_answer, true_answer
-        hard_label = int(rng.random() < 0.5)
-    if hard_label:
-        answer = true_answer
-    else:
-        candidate_answers = [choice for i in ex["choices"]]
-        answer = rng.choice([x for x in candidate_answers if x != true_answer])
-    txt = f"Context: {ex['context']}\nQuestion: {ex['question']}\nAnswer: {answer}"
-    return dict(txt=txt, hard_label=hard_label)
-
-
-register_dataset(
-    "truthful_qa",
-    DatasetConfig(
-        loader=hf_loader("EleutherAI/truthful_qa_mc", split_names=dict(test="validation")), formatter=format_truthful_qa
-    ),
-)
-
-
 VALID_DATASETS: list[str] = list(_REGISTRY.keys())
 
 """

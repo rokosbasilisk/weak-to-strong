@@ -12,7 +12,7 @@ import torch_optimizer as toptim
 from transformers.modeling_utils import load_sharded_checkpoint
 
 import weak_to_strong.logger as logger
-from weak_to_strong.common import clear_mem
+from weak_to_strong.utils import clear_mem
 from weak_to_strong.eval import eval_model_acc
 from weak_to_strong.loss import xent_loss
 from weak_to_strong.model import TransformerWithHead
@@ -226,6 +226,7 @@ def train_and_save_model(
         # slight misnomer, more like minibatch_size_per_dp_replica
         minibatch_size = minibatch_size_per_device
     else:
+        print("model_parallel is absent")
         model = TransformerWithHead.from_pretrained(
             model_config.name, num_labels=2, linear_probe=linear_probe, **custom_kwargs
         ).to("cuda")
@@ -240,11 +241,23 @@ def train_and_save_model(
                 "GPUs, setting minibatch_size to",
                 minibatch_size,
             )
+        else:
+            # single GPU mode
+            minibatch_size = minibatch_size_per_device
+            print(
+                "Using",
+                torch.cuda.device_count(),
+                "GPUs, setting minibatch_size to",
+                minibatch_size,
+            )
+
 
     if already_trained:
         test_results = eval_model_acc(model, test_ds, eval_batch_size)
     else:
         start = time.time()
+
+        print(f"minibatch_size is: {minibatch_size}")
         test_results = train_model(
             model,
             train_ds,

@@ -18,10 +18,20 @@ class TransformerWithHead(PreTrainedModel):
         config = AutoConfig.from_pretrained(name, **kwargs)
         super().__init__(config)
         self.num_labels = config.num_labels
-        self.transformer = AutoModelForCausalLM.from_pretrained(name, **kwargs)
+        lm = AutoModelForCausalLM.from_pretrained(name, **kwargs)
+        self.lm = lm
+
+        if (name.startswith("EleutherAI")): # for pythia models
+            self.transformer = lm.gpt_neox
+            self.lm_head = lm.embed_out
+
+        else:
+            self.transformer = lm.transformer
+            self.lm_head = lm.lm_head
+
         hidden_size = getattr(config, "n_embd", getattr(config, "hidden_size", None))
         self.score = torch.nn.Linear(hidden_size, self.num_labels, bias=False).to(
-            self.transformer.embed_out.weight.dtype
+            self.lm_head.weight.dtype
         )
         torch.nn.init.normal_(self.score.weight, std=0.0)
         self.linear_probe = linear_probe
