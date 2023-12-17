@@ -278,4 +278,54 @@ def train_w2s(
         json.dump(res_dict,f,)
 
 if __name__ == "__main__":
-    fire.Fire(train_w2s)
+    from itertools import combinations
+
+    param_sizes = [70,160,410]
+    model_names = [f"EleutherAI/pythia-{params}m" for params in param_sizes]
+    ckpts = [f"step{str(int(step_num*1000))}" for step_num in range(1,155,15)]
+
+    train_params = {
+        'batch_size': 32,
+        'max_ctx': 1024,
+        'ds_name': "boolq",
+        'transfer_loss': "xent,logconf",
+        'n_docs': 10000,
+        'n_test_docs': 200,
+        'weak_model_size': "EleutherAI/pythia-70m",
+        'weak_model_ckpt': "step1000",
+        'weak_lr': None,
+        'strong_model_size': "EleutherAI/pythia-410m",
+        'strong_model_ckpt': "step2000",
+        'strong_lr': None,
+        'transfer_lr': None,
+        'weak_optim': None,
+        'strong_optim': None,
+        'transfer_optim': None,
+        'gt_epochs': 2,
+        'transfer_epochs': None,
+        'force_retrain': False,
+        'seed': 0,
+        'minibatch_size_per_device': 8,
+        'train_with_dropout': False,
+        'results_folder': "results",
+        'linear_probe': False,
+        'lr_schedule': "cosine_anneal",
+        'log_prefix': "",
+        'eval_every': 100000000
+    }
+    model_combinations = [(a, b) for a, b in combinations(model_names, 2) if a != b]
+    checkpoint_combinations = [(a, b) for a, b in combinations(checkpoint, 2)]
+
+    for model_comb in tqdm(model_combinations):
+        for ckpt_comb in tqdm(checkpoint_combinations):
+
+            train_params["weak_model_size"], train_params["strong_model_size"] = model_comb
+            train_params["weak_model_ckpt"], train_params["strong_model_ckpt"] = ckpt_comb
+
+            print(
+                f"Train parameters: "
+                f"weak_model_size={model_comb[0]}, strong_model_size={model_comb[1]}; "
+                f"weak_model_ckpt={ckpt_comb[0]}, strong_model_ckpt={ckpt_comb[1]}"
+            )
+
+            train_w2s(**train_params)
