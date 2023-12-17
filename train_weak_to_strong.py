@@ -16,21 +16,22 @@ from weak_to_strong.train import ModelConfig, train_and_save_model
 model_conf_params = {}
 
 #create configs
-# model_conf_params["EleutherAI/pythia-14m"] = {"default_lr":5e-5,"eval_batch_size":32}
+# total 154 checkpoints
+model_conf_params["EleutherAI/pythia-14m"]  = {"default_lr":5e-5,"eval_batch_size":32}
 model_conf_params["EleutherAI/pythia-70m"]  = {"default_lr":5e-5,"eval_batch_size":32}
 model_conf_params["EleutherAI/pythia-160m"] = {"default_lr":5e-5,"eval_batch_size":32}
 model_conf_params["EleutherAI/pythia-410m"] = {"default_lr":5e-5,"eval_batch_size":32}
 
 
-## read this from a yaml later
+
 MODELS_DICT = {}
-# Iterate over the dictionary and create ModelConfig instances
+
 for key, value in model_conf_params.items():
-    # Default values if the keys are not present in the dictionary
+
     default_lr = value.get("default_lr", 5e-5)
     eval_batch_size = value.get("eval_batch_size", 32)
 
-    # Create ModelConfig instance
+
     MODELS_DICT[key] = model_config_instance = ModelConfig(
         name=key,
         default_lr=default_lr,
@@ -51,7 +52,7 @@ VALID_LOSSES: List[str] = list(loss_dict.keys())
 def main(
     batch_size: int = 32,
     max_ctx: int = 1024,
-    ds_name: str = "truthful_qa",
+    ds_name: str = "boolq",
     transfer_loss: Union[str, Sequence[str]] = "xent,logconf",
     n_docs: int = 10000,
     n_test_docs: int = 200,
