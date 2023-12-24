@@ -17,8 +17,8 @@ model_conf_params = {}
 
 #create configs
 # total 154 checkpoints
-param_sizes = [14,70,160,410]
-model_names = [f"EleutherAI/pythia-{params}m" for params in param_sizes]
+param_sizes = ["14m","70m","160m","410m","1b","1.4b","2.8b","6.9b","12b"]
+model_names = [f"EleutherAI/pythia-{params}" for params in param_sizes]
 checkpoints = [f"step{str(int(step_num*1000))}" for step_num in range(1,155)]
 
 # filling everything
@@ -31,7 +31,7 @@ MODELS_DICT = {}
 for key, value in model_conf_params.items():
 
     default_lr = value.get("default_lr", 5e-5)
-    eval_batch_size = value.get("eval_batch_size", 32)
+    eval_batch_size = value.get("eval_batch_size", 6)
 
 
     MODELS_DICT[key] = model_config_instance = ModelConfig(
@@ -52,7 +52,7 @@ VALID_LOSSES: List[str] = list(loss_dict.keys())
 
 
 def train_w2s(
-    batch_size: int = 32,
+    batch_size: int = 6,
     max_ctx: int = 1024,
     ds_name: str = "boolq",
     transfer_loss: Union[str, Sequence[str]] = "xent,logconf",
@@ -75,7 +75,7 @@ def train_w2s(
     transfer_epochs: Optional[int] = None,
     force_retrain: bool = False,
     seed: int = 0,
-    minibatch_size_per_device: Optional[int] = 8,
+    minibatch_size_per_device: Optional[int] = 1,
     train_with_dropout: bool = False,
     results_folder: str = "/tmp/results",
     linear_probe: bool = False,
@@ -105,10 +105,10 @@ def train_w2s(
     strong_model_config = MODELS_DICT[strong_model_size]
 
     if weak_lr is None:
-        assert batch_size == 32
+        #assert batch_size == 32
         weak_lr = weak_model_config.default_lr
     if strong_lr is None:
-        assert batch_size == 32
+        #assert batch_size == 32
         strong_lr = strong_model_config.default_lr
     if transfer_lr is None:
         transfer_lr = strong_lr
@@ -209,7 +209,7 @@ def train_w2s(
         test_ds,
         loss_type="xent",
         label="weak",
-        subpath=os.path.join("weak_model_gt", weak_model_size.replace("/", "_"),"_",checkpoint),
+        subpath=os.path.join("weak_model_gt", weak_model_size.replace("/", "_"),weak_model_ckpt),
         lr=weak_lr,
         eval_batch_size=weak_eval_batch_size,
         inference_ds=train2_ds,
@@ -227,7 +227,7 @@ def train_w2s(
         test_ds,
         loss_type="xent",
         label="strong",
-        subpath=os.path.join("strong_model_gt", strong_model_size.replace("/", "_"),"_",checkpoint),
+        subpath=os.path.join("strong_model_gt", strong_model_size.replace("/", "_"),strong_model_ckpt),
         lr=strong_lr,
         eval_batch_size=strong_eval_batch_size,
         epochs=gt_epochs,
@@ -250,7 +250,7 @@ def train_w2s(
             label="weak2strong",
             subpath=os.path.join(
                 "strong_model_transfer",
-                f"{weak_model_size.replace('/', '_')}_{strong_model_size.replace('/', '_')}_{tloss}",
+                f"{weak_model_size.replace('/', '_')}_{weak_model_ckpt}_{strong_model_size.replace('/', '_')}_{strong_model_ckpt}_{tloss}",
             ),
             lr=transfer_lr,
             eval_batch_size=strong_eval_batch_size,
@@ -274,18 +274,13 @@ def train_w2s(
         res_dict[f"transfer_acc_{tloss}"] = transfer_acc
         print(f"transfer acc ({tloss}):", transfer_acc)
 
-    with open(os.path.join(results_folder,f"{weak_model_size.replace('/', '_')}_{strong_model_size.replace('/', '_')}.results_summary.json",),"w",) as f:
+    with open(os.path.join(results_folder,f"{weak_model_size.replace('/', '_')}_{weak_model_ckpt}_{strong_model_size.replace('/', '_')}_{strong_model_ckpt}_.results_summary.json",),"w",) as f:
         json.dump(res_dict,f,)
 
 if __name__ == "__main__":
-    from itertools import combinations
-
-    param_sizes = [70,160,410]
-    model_names = [f"EleutherAI/pythia-{params}m" for params in param_sizes]
-    ckpts = [f"step{str(int(step_num*1000))}" for step_num in range(1,155,15)]
 
     train_params = {
-        'batch_size': 32,
+        'batch_size': 8,
         'max_ctx': 1024,
         'ds_name': "boolq",
         'transfer_loss': "xent,logconf",
@@ -303,9 +298,9 @@ if __name__ == "__main__":
         'transfer_optim': None,
         'gt_epochs': 2,
         'transfer_epochs': None,
-        'force_retrain': False,
+        'force_retrain': True,
         'seed': 0,
-        'minibatch_size_per_device': 8,
+        'minibatch_size_per_device': 2,
         'train_with_dropout': False,
         'results_folder': "results",
         'linear_probe': False,
@@ -313,19 +308,36 @@ if __name__ == "__main__":
         'log_prefix': "",
         'eval_every': 100000000
     }
-    model_combinations = [(a, b) for a, b in combinations(model_names, 2) if a != b]
-    checkpoint_combinations = [(a, b) for a, b in combinations(checkpoint, 2)]
+    
+    from itertools import product,combinations
+    from tqdm import tqdm
 
-    for model_comb in tqdm(model_combinations):
-        for ckpt_comb in tqdm(checkpoint_combinations):
+    param_list =  list(reversed(["1b","1.4b","2.8b","6.9b"]))
+    step_list = list(range(1, 155, 50))
 
-            train_params["weak_model_size"], train_params["strong_model_size"] = model_comb
-            train_params["weak_model_ckpt"], train_params["strong_model_ckpt"] = ckpt_comb
+    model_combinations = product(param_list, repeat=2)
+    checkpoint_combinations = product(step_list, repeat=2)
 
-            print(
-                f"Train parameters: "
-                f"weak_model_size={model_comb[0]}, strong_model_size={model_comb[1]}; "
-                f"weak_model_ckpt={ckpt_comb[0]}, strong_model_ckpt={ckpt_comb[1]}"
-            )
+    for (weak_model_param, strong_model_param), (weak_ckpt_step, strong_ckpt_step) in tqdm(product(model_combinations, checkpoint_combinations)):
+        
+        weak_model_size_str = f"EleutherAI/pythia-{weak_model_param}"
+        strong_model_size_str = f"EleutherAI/pythia-{strong_model_param}"
+        weak_model_ckpt_str = f"step{str(int(weak_ckpt_step * 1000))}"
+        strong_model_ckpt_str = f"step{str(int(strong_ckpt_step * 1000))}"
 
+        train_params["weak_model_size"] = weak_model_size_str
+        train_params["strong_model_size"] = strong_model_size_str
+        train_params["weak_model_ckpt"] = weak_model_ckpt_str
+        train_params["strong_model_ckpt"] = strong_model_ckpt_str
+
+        print(
+            f"Train parameters: "
+            f"weak_model_size={weak_model_size_str}, strong_model_size={strong_model_size_str}; "
+            f"weak_model_ckpt={weak_model_ckpt_str}, strong_model_ckpt={strong_model_ckpt_str}"
+        )
+
+        #if ((weak_model_param == strong_model_param) and (weak_ckpt_step == strong_ckpt_step)):
+        try:
             train_w2s(**train_params)
+        except Exception as e:
+            print(f"An exception occurred: {type(e).__name__}: {e}")

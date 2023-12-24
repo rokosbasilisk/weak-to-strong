@@ -25,7 +25,7 @@ class ModelConfig:
     eval_batch_size: int
     custom_kwargs: Optional[dict] = None
     gradient_checkpointing: bool = False
-    model_parallel: bool = False
+    model_parallel: bool = True # making this default
     default_optimizer: str = "adam"
 
 
