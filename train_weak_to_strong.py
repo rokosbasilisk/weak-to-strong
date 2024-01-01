@@ -278,11 +278,7 @@ def train_w2s(
         json.dump(res_dict,f,)
 
 if __name__ == "__main__":
-    from itertools import combinations
 
-    param_sizes = [70,160,410]
-    model_names = [f"EleutherAI/pythia-{params}m" for params in param_sizes]
-    ckpts = [f"step{str(int(step_num*1000))}" for step_num in range(1,155,15)]
 
     train_params = {
         'batch_size': 32,
@@ -313,6 +309,13 @@ if __name__ == "__main__":
         'log_prefix': "",
         'eval_every': 100000000
     }
+
+    from itertools import combinations
+    from tqdm import tqdm
+
+    param_sizes = [70,160,410]
+    model_names = [f"EleutherAI/pythia-{params}m" for params in param_sizes]
+    ckpts = [f"step{str(int(step_num*1000))}" for step_num in range(1,155,15)]
     model_combinations = [(a, b) for a, b in combinations(model_names, 2) if a != b]
     checkpoint_combinations = [(a, b) for a, b in combinations(checkpoint, 2)]
 
