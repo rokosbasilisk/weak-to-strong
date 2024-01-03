@@ -23,6 +23,8 @@ class ModelConfig:
     name: str
     default_lr: float
     eval_batch_size: int
+    batch_size: int
+    minibatch_size_per_device:int
     custom_kwargs: Optional[dict] = None
     gradient_checkpointing: bool = False
     model_parallel: bool = True # making this default
