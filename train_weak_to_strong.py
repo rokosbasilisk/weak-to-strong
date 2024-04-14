@@ -18,7 +18,7 @@ model_conf_params = {}
 #create configs
 param_sizes = ["160m","410m","1b","1.4b","2.8b"]
 learning_rates = [5e-5,5e-5,5e-5,5e-5,5e-5]
-batch_sizes = [60,48,24,24,18]
+batch_sizes = [48,48,36,24,18]
 model_names = [f"EleutherAI/pythia-{params}" for params in param_sizes]
 
 for idx,param in enumerate(param_sizes):
